@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>ang.js</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+    <ul class="sections">
+        
+          <li id="title">
+              <div class="annotation">
+                  <h1>ang.js</h1>
+              </div>
+          </li>
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <p>Create an application</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> app = angular.module(<span class="string">'twittersearch'</span>, []);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>This is the single controller in my application</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>app.controller( <span class="string">'AppCtrl'</span>, <span class="function"><span class="keyword">function</span> <span class="title">AppCtrl</span><span class="params">($scope, $http, twitterSearchService)</span> {</span>
+
+    $scope.tweets = [];
+    $scope.recentSearches = [];
+    $scope.term = <span class="string">""</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>used when selecting a previous search from the list</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    $scope.setSearch = <span class="keyword">function</span>(term){
+        $scope.term = term;
+        $scope.searchTwitter();
+    };
+
+    $scope.searchTwitter = <span class="keyword">function</span>() {
+        updateRecentSearches();
+
+        twitterSearchService.search($scope.term).success(<span class="keyword">function</span>(search_results){</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>we want to create a proxy object to be used in our template</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>            $scope.tweets = _.map(search_results.results, <span class="keyword">function</span>(item){
+                <span class="keyword">return</span> {
+                    from_user_name: item.from_user_name,
+                    text: replaceURLWithHTMLLinks(item.text)
+                };
+            });
+        });
+    };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <p>Check to see if the current search already exists
+If so update it&#39;s timestamp, otherwise add it to the lsit</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="function"><span class="keyword">function</span> <span class="title">updateRecentSearches</span><span class="params">()</span>{</span>
+        <span class="keyword">var</span> found = <span class="literal">false</span>;
+
+        angular.forEach($scope.recentSearches, <span class="keyword">function</span>(value, key){
+            <span class="keyword">if</span> (value.term === $scope.term) {
+                value.timestamp = <span class="keyword">new</span> Date();
+                found = <span class="literal">true</span>;
+                <span class="keyword">return</span>;
+            }
+        });
+
+        <span class="keyword">if</span> ( !found ) {
+            $scope.recentSearches.push({
+                term: $scope.term,
+                timestamp: <span class="keyword">new</span> Date()
+            });
+        }
+
+        $scope.recentSearches = _.sortBy($scope.recentSearches, <span class="keyword">function</span>(obj){ <span class="keyword">return</span> obj.timestamp; }).reverse();
+    }
+
+    <span class="function"><span class="keyword">function</span> <span class="title">replaceURLWithHTMLLinks</span><span class="params">(text)</span> {</span>
+        <span class="keyword">var</span> exp = <span class="regexp">/(\b(https?|ftp|file):\/\/[-A-Z0-9+&amp;@#\/%?=~_|!:,.;]*[-A-Z0-9+&amp;@#\/%=~_|])/ig</span>;
+        <span class="keyword">return</span> text.replace(exp,<span class="string">"&lt;a href='$1' target='_blank'&gt;$1&lt;/a&gt;"</span>);
+    }
+});</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <p>simple query against the twitter JSON API</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>app.factory(<span class="string">'twitterSearchService'</span>, <span class="keyword">function</span>($http) {
+    <span class="keyword">var</span> twitter_search_url_base = <span class="string">'http://search.twitter.com/search.json?q='</span>;
+
+    <span class="keyword">return</span> {
+        search : <span class="keyword">function</span>(search_term) {
+            <span class="keyword">var</span> dfd = $http.jsonp(twitter_search_url_base + escape(search_term) + <span class="string">'&amp;callback=JSON_CALLBACK'</span>);
+            <span class="keyword">return</span> dfd;
+        }
+    };
+});</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>
